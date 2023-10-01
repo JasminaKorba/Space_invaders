@@ -1,4 +1,4 @@
-import pygame, random, sys
+import pygame, random, sys, time
 
 pygame.init()
 
@@ -28,7 +28,9 @@ class Game:
         self.alien_hit_sound = pygame.mixer.Sound("alien_die.wav")
         self.player_hit_sound = pygame.mixer.Sound("die2.wav")
         self.player_hit_sound.set_volume(0.5)
-
+        self.game_over_sound = pygame.mixer.Sound("game_over.mp3")
+        pygame.mixer.music.load("background_music.mp3")
+        pygame.mixer.music.set_volume(0.2)
         # Set fonts
         self.font = pygame.font.Font("font_1.ttf", 45)
 
@@ -114,15 +116,27 @@ class Game:
 
     def start_new_round(self):
         # Create a grid of Aliens 11 colums and 5 rows
-        for i in range(11):
-            for j in range(5):
-                alien = Alien(
-                    70 + (i * 70),
-                    70 + (j * 70),
-                    self.round_number,
-                    self.alien_bullets,
-                )
-                my_alien_group.add(alien)
+        x = random.randint(1, 6)
+        if self.round_number < 12:
+            for i in range(self.round_number):
+                for j in range(x):
+                    alien = Alien(
+                        100 + (i * 125),
+                        100 + (j * 70),
+                        self.round_number,
+                        self.alien_bullets,
+                    )
+                    my_alien_group.add(alien)
+        else:
+            for i in range(11):
+                for j in range(x):
+                    alien = Alien(
+                        100 + (i * 125),
+                        100 + (j * 70),
+                        self.round_number,
+                        self.alien_bullets,
+                    )
+                    my_alien_group.add(alien)
         self.player.reset()
 
         # Pause the game and prompt user to start
@@ -139,11 +153,15 @@ class Game:
             alien.reset()
         # Check if the game is over or it is a simple raound reset
         if self.player.lives == 0:
+            pygame.mixer.music.pause()
+            pygame.mixer.find_channel(4).play(self.game_over_sound)
+            time.sleep(3)
             self.reset_game()
         else:
             self.pause_game(main_text, sub_text)
 
     def pause_game(self, main_text, sub_text):
+        pygame.mixer.music.play(-1)
         # Set colors
         WHITE = (255, 255, 255)
         BLACK = (0, 0, 0)
@@ -183,6 +201,7 @@ class Game:
                         sys.exit()
                     # The user want to play again
                     if event.key == pygame.K_RETURN:
+                        pygame.mixer.music.pause()
                         is_paused = False
 
     def reset_game(self):
@@ -199,13 +218,15 @@ class Game:
         self.alien_bullets.empty()
         self.player_bullets.empty()
         # Start a new game
+        pygame.mixer.music.play(-1)
         self.start_new_round()
 
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, bullet_group):
         super().__init__()
-        self.image = pygame.image.load(f"player_image/spaceship_1.png").convert_alpha()
+        self.image = pygame.image.load(f"player1.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (150, 150))
         self.rect = self.image.get_rect()
         self.rect.centerx = SCREEN_WIDTH // 2
         self.rect.bottom = SCREEN_HEIGHT
@@ -243,8 +264,8 @@ class Player(pygame.sprite.Sprite):
 class Alien(pygame.sprite.Sprite):
     def __init__(self, x, y, velocity, bullet_group):
         super().__init__()
-        self.i = 1
-        self.image = pygame.image.load(f"ufo{self.i}.png").convert_alpha()
+        self.image = pygame.image.load("alien.png").convert_alpha()
+        self.image = pygame.transform.scale(self.image, (70, 70))
         self.rect = self.image.get_rect()
         self.rect.topleft = (x, y)
 
@@ -259,11 +280,6 @@ class Alien(pygame.sprite.Sprite):
         self.shoot_sound.set_volume(0.5)
 
     def update(self):
-        if self.i < 6:
-            self.i += 1
-        else:
-            self.i = 1
-
         self.rect.x += self.direction * self.velocity
 
         # Randomly fire the bullet
@@ -361,8 +377,8 @@ my_game.start_new_round()
 my_background_objects = []
 buffer = 1020
 speed = 2
-for x in range(2):
-    for i in range(1, 10):
+for x in range(4):
+    for i in range(1, 5):
         my_background_objects.append(
             BackgroundObject(
                 pygame.image.load(f"o{i}.png").convert_alpha(), buffer, speed
@@ -370,7 +386,6 @@ for x in range(2):
         )
         buffer -= 1000
         speed += 0.2
-
 
 # The main game loop
 while True:
